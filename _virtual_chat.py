@@ -3,7 +3,8 @@ import streamlit as st
 import cv2, time, os, tempfile, threading, datetime, glob, base64
 import speech_recognition as sr
 from deepface import DeepFace
-from pymongo import MongoClient
+from db import get_db
+
 import numpy as np
 
 DEEPFACE_AVAILABLE = True
@@ -335,8 +336,7 @@ def virtual_chat_mode(username=None, detect_text_emotion_func=None, retrieve_ans
 # ==================== SAVE TO MONGODB ====================
 def save_session_to_mongo(username: str):
     try:
-        client = MongoClient("mongo_key", serverSelectionTimeoutMS=5000)
-        db = client["final_chatbot_talks"]
+        db = get_db()
         col = db["virtual_chat_sessions"]
 
         # Read all snapshots
@@ -345,21 +345,24 @@ def save_session_to_mongo(username: str):
             for f in glob.glob("snapshots/*.jpg"):
                 try:
                     with open(f, "rb") as img_file:
-                        snapshot_data.append(base64.b64encode(img_file.read()).decode("utf-8"))
-                except:
+                        snapshot_data.append(
+                            base64.b64encode(img_file.read()).decode("utf-8")
+                        )
+                except Exception:
                     pass
 
         doc = {
             "username": username,
-            "timestamp": datetime.datetime.now(),
+            "timestamp": datetime.datetime.utcnow(),
             "chat_history": st.session_state.virtual_chat_history,
             "emotion_timeline": st.session_state.emotion_timeline,
             "snapshots": snapshot_data,
             "total_messages": len(st.session_state.virtual_chat_history),
-            "session_duration_emotions": len(st.session_state.emotion_timeline)
+            "session_duration_emotions": len(st.session_state.emotion_timeline),
         }
-        
+
         col.insert_one(doc)
         st.success("✅ Virtual Chat Session saved to MongoDB")
+
     except Exception as e:
-        st.warning(f"⚠️ Could not save to MongoDB: {str(e)}")
+        st.warning("⚠️ Could not save session to database.")

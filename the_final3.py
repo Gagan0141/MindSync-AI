@@ -10,7 +10,6 @@ import threading
 import tempfile
 from PIL import Image
 import speech_recognition as sr
-from pymongo import MongoClient
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline
 import time
@@ -29,7 +28,19 @@ from chatbot_responses import get_response, detect_emotion_from_text
 # Add this code to your main app (after your imports and before main())
 
 import datetime
-from pymongo import MongoClient
+import streamlit as st
+from db import get_db
+
+# ==================== Streamlit Page ====================
+st.set_page_config(
+    page_title="MindSync AI ⭐",
+    page_icon="🌈",
+    layout="wide"
+)
+
+# ==================== Database ====================
+db = get_db()
+
 
 # ==================== MENTAL HEALTH CONDITIONS ====================
 MENTAL_HEALTH_CONDITIONS = {
@@ -255,14 +266,7 @@ try:
 except ImportError:
     DEEPFACE_AVAILABLE = False
 
-# ==================== Streamlit Page ====================
-st.set_page_config(page_title="MindSync AI ⭐", page_icon="🌈", layout="wide")
 # ==================== Database / RAG ====================
-@st.cache_resource
-def init_db():
-    client = MongoClient("mongo_key")
-    db = client["final_chatbot_talks"]
-    return db
     
 @st.cache_resource
 def load_emotion_model():
@@ -272,7 +276,6 @@ def load_emotion_model():
 def init_enhanced_rag():
     return EnhancedRAGSystem(rag_directory="rag_knowledges")
 
-db = init_db()
 #embedder, index, rag_inputs, rag_outputs = load_rag()
 emotion_classifier = load_emotion_model()
 enhanced_rag= init_enhanced_rag()
